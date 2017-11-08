@@ -1,6 +1,6 @@
 # Allow to override the date command (e.g. by 'gdate' on Mac)
 if [ -z "$GBT_CAR_EXECTIME__DATE" ]; then
-    export GBT_CAR_EXECTIME__DATE='date'
+    export GBT_CAR_EXECTIME__DATE='gdate'
 fi
 
 # Function executed before every command run by the shell
