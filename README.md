@@ -1,7 +1,7 @@
 Go Bullet Train (GBT)
 =====================
 
-Highly configurable prompt decoration for ZSH and Bash written in Go. It's
+Highly configurable prompt builder for Bash and ZSH written in Go. It's
 inspired by the [Oh My ZSH](https://github.com/robbyrussell/oh-my-zsh) [Bullet
 Train](https://github.com/caiogondim/bullet-train.zsh) theme.
 
@@ -10,8 +10,9 @@ Train](https://github.com/caiogondim/bullet-train.zsh) theme.
 Works well on Linux (Terminator, Konsole, Gnome Terminal) and Mac (Terminal,
 iTerm). It has no other dependencies than Go and its standard libraries.
 
-[![Build status](https://travis-ci.org/jtyr/gbt.svg?branch=master)](https://travis-ci.org/jtyr/gbt)
 [![Release](https://img.shields.io/github/release/jtyr/gbt.svg)](https://github.com/jtyr/gbt/releases)
+[![Build status](https://travis-ci.org/jtyr/gbt.svg?branch=master)](https://travis-ci.org/jtyr/gbt)
+[![Packagecloud](https://img.shields.io/badge/%E2%98%81-Packagecloud-707aed.svg)](https://packagecloud.io/gbt/release)
 
 
 Table of contents
@@ -34,7 +35,7 @@ Table of contents
     - [`Sign` car](#sign-car)
     - [`Status` car](#status-car)
     - [`Time` car](#time-car)
-- [Prompt forwarding via SSH and SUDO](#prompt-forwarding-via-ssh-and-sudo)
+- [Prompt forwarding](#seamless-implementation)
 - [Author](#author)
 - [License](#license)
 
@@ -46,32 +47,51 @@ On Arch Linux:
 
 ```shell
 yaourt -S gbt
-# For ZSH
-PROMPT='$(gbt $?)'
-# For Bash
-PS1='$(gbt $?)'
 ```
 
-or on Mac via [`brew`](https://brew.sh/):
+On CentOS/RHEL (packages hosted by [Packagecloud](https://packagecloud.io/gbt/release)):
+
+```shell
+cat > /etc/yum.repos.d/gbt.repo <<END
+[gbt]
+name=GBT YUM repo
+baseurl=https://packagecloud.io/gbt/release/el/7/\$basearch
+gpgkey=https://packagecloud.io/gbt/release/gpgkey/jtyr-gbt-4C6E79EFF45439B6.pub.gpg
+gpgcheck=1
+END
+yum install gbt
+```
+
+On Ubuntu/Debian (packages hosted by [Packagecloud](https://packagecloud.io/gbt/release)):
+
+```shell
+curl -L https://packagecloud.io/gbt/release/gpgkey | apt-key add -
+echo 'deb https://packagecloud.io/gbt/release/ubuntu/ xenial main' > /etc/apt/sources.list.d/gbt.list
+apt-get update
+apt-get install gbt
+```
+
+On Mac via [`Homebrew`](https://brew.sh/):
 
 ```shell
 brew tap jtyr/repo
 brew install gbt
-# For ZSH
-PROMPT='$(gbt $?)'
-# For Bash
-PS1='$(gbt $?)'
 ```
 
-or via Go:
+From source code:
 
 ```shell
 go get -u github.com/jtyr/gbt
 go build -o ~/gbt github.com/jtyr/gbt
-# For ZSH
-PROMPT='$(~/gbt $?)'
+```
+
+GBT can be activated by calling it from the shell prompt variable:
+
+```shell
 # For Bash
-PS1='$(~/gbt $?)'
+PS1='$(gbt $?)'
+# For ZSH
+PROMPT='$(gbt $?)'
 ```
 
 In order to display all colors correctly, the terminal should use 256 color
@@ -542,10 +562,10 @@ In order to allow this car to calculate the execution time, the following must
 be loaded in the shell:
 
 ```shell
-# For ZSH
-source /usr/share/gbt/sources/ExecTime.zsh
 # For Bash
-source /usr/share/gbt/sources/ExecTime.bash
+source /usr/share/gbt/sources/exec_time/bash
+# For ZSH
+source /usr/share/gbt/sources/exec_time/zsh
 ```
 
 
@@ -1247,8 +1267,10 @@ Car that displays current date and time.
   Custom separator string for this car.
 
 
-Prompt forwarding via SSH and SUDO
-----------------------------------
+Prompt forwarding
+-----------------
+
+### SSH
 
 It's possible to use GBT to generate prompt string and forward it to remote
 server via SSH so we can have GBT-like prompt also in the remote shell. The
@@ -1284,25 +1306,72 @@ the Bash command which loads that generated file as its RC file:
 ssh myserver -t "echo \"PS1='$(source ~/.gbt.theme; gbt)'\" > /tmp/.gbt; bash --rcfile /tmp/.gbt"
 ```
 
-Similar principle is used to get the `PS1` through the run of `sudo` command.
-We just need to run Bash command which loads that generated file as its RC
-file:
+
+### SU and SUDO
+
+Similar principle is used to get the `PS1` through the run of `su` command.
+We just need to run Bash command which loads the generated file as its RC file:
+
+```shell
+su -c 'bash --rcfile /tmp/.gbt' - myuser
+```
+
+The same principle can be used for `sudo` command:
 
 ```shell
 sudo su -c 'bash --rcfile /tmp/.gbt' - myuser
 ```
 
-More complete implementation of the above, including the passing of the `PS1`
-string via `sudo`, is available as a part of this repo. You can start using it
-by doing the following:
 
-```
-ln -s /usr/share/gbt/sources/ssh_prompt.remote ~/.gbt.sh
-ln -s /usr/share/gbt/themes/ssh_prompt ~/.gbt.theme
-source /usr/share/gbt/sources/ssh_prompt.local
+### Docker
+
+To get GBT-like prompt inside a Docker container, we need to copy the generated
+file into the container and then execute Bash like in the case of `su` or
+`sudo`:
+
+```shell
+docker cp /tmp/.gbt pensive_pasteur:/tmp
+docker exec -it pensive_pasteur /bin/bash --rcfile /tmp/.gbt
 ```
 
-Then just SSH to some remote server and you should get GBT-like looking prompt:
+
+### Vagrant
+
+To get GBT-like prompt inside a Vagrant when running `vagrant ssh`, we can use
+the same approach like for SSH above:
+
+```shell
+vagrant ssh --command "echo \"PS1='$(source ~/.gbt.theme; gbt)'\" > /tmp/.gbt; bash --rcfile /tmp/.gbt"
+```
+
+
+### Seamless implementation
+
+More complete and seamless implementation of the above, including the passing
+of the `PS1` string via `docker`, `ssh`, `su`, `sudo` and `vagrant` commands,
+is available as a part of this repo. You can start using it by doing the
+following:
+
+```shell
+export GBT__HOME="/usr/share/gbt"
+source "$GBT__HOME/sources/prompt_forwarding/local"
+alias docker="gbt_docker"
+alias ssh="gbt_ssh"
+alias su="gbt_su"
+alias sudo="gbt_sudo"
+alias vagrant="gbt_vagrant"
+```
+
+If you want to have the alias available only on the remote machine, prepend the
+alias by `gbt___`. For example to have the `sudo` alias, using the `gbt_sudo`
+function, available only on the remote machine, define the alias like this:
+
+```shell
+alias gbt__sudo="gbt_sudo"
+```
+
+Then just SSH to some remote server or enter some Docker container or Vagrant
+box and you should get GBT-like looking prompt:
 
 ![SSH and SUDO demo](https://raw.githubusercontent.com/jtyr/gbt/master/images/ssh_sudo.gif "SSH and SUDO demo")
 
