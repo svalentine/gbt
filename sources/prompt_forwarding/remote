@@ -36,7 +36,7 @@ function gbt__get_os() {
 
     if [[ ! $(cat /proc/1/sched | head -n 1 | egrep '(init|systemd)') ]]; then
         ret='docker'
-    elif [ "$(uname -s)" = 'Linux' ]; then
+    elif [ "$(uname -s)" = 'Linux' ] && [ -e /etc/os-release ]; then
         source /etc/os-release
         ret="$ID"
     else
@@ -61,6 +61,15 @@ function gbt_docker() {
         $DOCKER_BIN exec ${@:2:$(($# - 2))} -it $GBT__CONTAINER_ID bash --rcfile $GBT__CONF
         $DOCKER_BIN exec ${@:2:$(($# - 2))} -it $GBT__CONTAINER_ID rm -f $GBT__CONF $GBT__CONF.bash
     fi
+}
+
+function gbt_mysql() {
+    local WHICH=$(which $GBT__WHICH_OPTS which 2>/dev/null)
+    [ -z $WHICH ] && gbt__err "'which' not found" && return 1
+    local MYSQL_BIN=$(which $GBT__WHICH_OPTS mysql 2>/dev/null)
+    [ $? -ne 0 ] && gbt__err "'mysql' not found" && return 1
+
+    $MYSQL_BIN --prompt "$GBT__MYSQL_PS1" $@
 }
 
 function gbt_su() {
@@ -130,11 +139,11 @@ else
 fi
 
 # Customize OS icon
-export GBT__OS=${GBT__SYMBOLS[$(gbt__get_os)]}
+export GBT__OS=${GBT__SYMBOLS[$(gbt__get_os)]:=?}
 
 # Create executable that is used as shell in 'su'
 if [ ! -e "$GBT__CONF.bash" ]; then
-    echo -e "#!/bin/bash\nbash --rcfile $GBT__CONF" > $GBT__CONF.bash
+    echo -e "#!/bin/bash\nbash --rcfile $GBT__CONF \$@" > $GBT__CONF.bash
     chmod +x $GBT__CONF.bash
 fi
 
