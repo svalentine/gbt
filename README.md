@@ -12,6 +12,7 @@ iTerm). It has no other dependencies than Go and its standard libraries.
 
 [![Release](https://img.shields.io/github/release/jtyr/gbt.svg)](https://github.com/jtyr/gbt/releases)
 [![Build status](https://travis-ci.org/jtyr/gbt.svg?branch=master)](https://travis-ci.org/jtyr/gbt)
+[![Coverage Status](https://coveralls.io/repos/github/jtyr/gbt/badge.svg?branch=master)](https://coveralls.io/github/jtyr/gbt?branch=master)
 [![Packagecloud](https://img.shields.io/badge/%E2%98%81-Packagecloud-707aed.svg)](https://packagecloud.io/gbt/release)
 
 
@@ -81,8 +82,8 @@ brew install gbt
 From source code:
 
 ```shell
-go get -u github.com/jtyr/gbt
-go build -o ~/gbt github.com/jtyr/gbt
+go get -u github.com/jtyr/gbt/cmd/gbt
+go build github.com/jtyr/gbt/cmd/gbt
 ```
 
 GBT can be activated by calling it from the shell prompt variable:
